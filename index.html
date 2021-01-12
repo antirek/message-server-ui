@@ -8,6 +8,8 @@
       <div class="row">
         <div class="col-12 col-md-3 q-pa-md">
           <!-- menu -->
+          <input type="text" v-model="baseUrl">
+          <input type="text" v-model="websocketUrl">
           <input type="text" v-model="token">
           <button @click="start()">Start</button>
           <div v-if="currentUser">
@@ -94,7 +96,8 @@
       var app = new Vue({
         el: '#app',
         data: {
-          baseUrl: 'http://localhost:3010/v1/',
+          baseUrl: 'https://message-server.ru/v1/',
+          websocketUrl: 'wss://message-server.ru/',
           currentUserId: null,
           currentUser: null,
           chats: null,
@@ -104,30 +107,8 @@
           selectedChatInfo: null,
           selectedChatUsers: null,
           message: null,
-          token:'wewe',
+          token: 'wewe',
           exampleSocket: null,
-        },
-        mounted () {
-          this.exampleSocket = new WebSocket("ws://localhost:3010");
-          function onMessage (e) {
-            const message = JSON.parse(e.data);
-            if (message.type === 'message') {
-              if (message.content.chatId !== this.selectedChat) return;
-              const data = Array.from(this.selectedChatMessages);
-              data.push(message.content);
-              this.selectedChatMessages = data;
-              this.$refs.scrollArea.setScrollPercentage(100,1000);
-            } else if (message.type === 'countNotViewed') {
-              const data = Array.from(this.chats).map(chat => {
-                if (chat.chatId === message.content.chatId) {
-                  chat.countNotViewed = message.content.countNotViewed;
-                }
-                return chat;
-              });
-              this.chats = data;
-            }
-          }
-          this.exampleSocket.onmessage = onMessage.bind(this);
         },
         methods: {
           async visibilityChanged (isVisible, entry, message) {
@@ -147,6 +128,27 @@
             return name + ' (' + userId + ')';
           },
           async start() {
+            this.exampleSocket = new WebSocket(this.websocketUrl);
+            function onMessage (e) {
+              const message = JSON.parse(e.data);
+              if (message.type === 'message') {
+                if (message.content.chatId !== this.selectedChat) return;
+                const data = Array.from(this.selectedChatMessages);
+                data.push(message.content);
+                this.selectedChatMessages = data;
+                this.$refs.scrollArea.setScrollPercentage(100,1000);
+              } else if (message.type === 'countNotViewed') {
+                const data = Array.from(this.chats).map(chat => {
+                  if (chat.chatId === message.content.chatId) {
+                    chat.countNotViewed = message.content.countNotViewed;
+                  }
+                  return chat;
+                });
+                this.chats = data;
+              }
+            }
+            this.exampleSocket.onmessage = onMessage.bind(this);
+
             axios.defaults.headers.common['x-api-key'] = this.token;
             this.currentUser = (await axios.get(this.baseUrl + `user/me`)).data;
             this.currentUserId = this.currentUser.userId;
