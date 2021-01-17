@@ -24,6 +24,11 @@
               </q-avatar>
               {{currentUser.name}}
             </q-chip>
+            <div>
+              name <input type="text" v-model="newUserName"><br/>
+              avatarUrl <input type="text" v-model="newUserAvatarUrl"><br/>
+              <button @click="changeUserData()">update</button>
+            </div>
           </div>
           <div v-if="chats">
             <h3>Chats</h3>
@@ -104,6 +109,8 @@
       var app = new Vue({
         el: '#app',
         data: {
+          newUserName: null,
+          newUserAvatarUrl: null,
           domain: 'localhost:3010',
           secure: false,
           token: 'f7277849-b26b-4c38-a05a-8a60dc0b14e2',
@@ -120,6 +127,7 @@
           exampleSocket: null,
         },
         methods: {
+          
           getBaseUrl () {
             const s = this.secure ? 's' : '';
             return `http${s}://${this.domain}/v1/`;
@@ -172,6 +180,18 @@
             this.chats = (await axios.get(this.getBaseUrl() + `chats`)).data;
             const subscribe = {action:'subscribe', userId: app.currentUserId};
             this.exampleSocket.send(JSON.stringify(subscribe));
+          },
+          async changeUserData () {
+            const name = this.newUserName;
+            const avatarUrl = this.newUserAvatarUrl;
+            const response = await axios.post(this.getBaseUrl() + `user/me`, {
+              name,
+              avatarUrl,
+            });
+            console.log('resp', response);
+            this.newUserName = null;
+            this.newUserAvatarUrl = null;
+            this.start();
           },
           async showChat(chatId) {
             this.selectedChat = chatId;
