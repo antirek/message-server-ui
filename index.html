@@ -6,12 +6,16 @@
   <body>
     <div id="app">
       <div class="row">
+        <div class="col-12 col-md-12 q-pa-md">
+          domain <input type="text" v-model="domain" placeholder="domain.ru:3030">
+          secure? <input type="checkbox" v-model="secure">
+          token <input type="text" v-model="token">
+          <button @click="start()">Connect</button>
+        </div>
+      </div>
+      <div class="row">
         <div class="col-12 col-md-3 q-pa-md">
           <!-- menu -->
-          <input type="text" v-model="baseUrl">
-          <input type="text" v-model="websocketUrl">
-          <input type="text" v-model="token">
-          <button @click="start()">Start</button>
           <div v-if="currentUser">
             <h6>User</h6>
             <q-chip>
@@ -40,9 +44,13 @@
           <div v-if="selectedChat">
             <div class="row">
               <div class="col-12 col-md-6 q-pa-md">
-                <h6 v-if="selectedChat">Chat {{selectedChat}}</h6>
+                <h6 v-if="selectedChat && selectedChatInfo">Chat {{selectedChat}} {{selectedChatInfo.name}}</h6>
                 <button v-if="selectedChat" @click="setAllMessagesStatusViewed(selectedChat)">mark all viewed</button>
                 <span v-if="selectedChatInfo">{{selectedChatInfo}}</span>
+                <div>
+                  new chat name <input type="text" v-model="selectedChatNewName">
+                  <button @click="changeSelectedChatName()">change</button>
+                </div>
               </div>
               <div class="col-12 col-md-6 q-pa-md">
                 <h6 v-if="selectedChatUsers">Users</h6>
@@ -96,8 +104,9 @@
       var app = new Vue({
         el: '#app',
         data: {
-          baseUrl: 'https://message-server.ru/v1/',
-          websocketUrl: 'wss://message-server.ru/',
+          domain: 'localhost:3010',
+          secure: false,
+          token: 'f7277849-b26b-4c38-a05a-8a60dc0b14e2',
           currentUserId: null,
           currentUser: null,
           chats: null,
@@ -105,18 +114,26 @@
           selectedChatMessages: null,
           selectedChat: null,
           selectedChatInfo: null,
+          selectedChatNewName: null,
           selectedChatUsers: null,
           message: null,
-          token: 'wewe',
           exampleSocket: null,
         },
         methods: {
+          getBaseUrl () {
+            const s = this.secure ? 's' : '';
+            return `http${s}://${this.domain}/v1/`;
+          },
+          getWebsocketUrl () {
+            const s = this.secure ? 's' : '';
+            return `ws${s}://${this.domain}/`;
+          },
           async visibilityChanged (isVisible, entry, message) {
             // console.log(isVisible, message);
             if (!message.viewed && isVisible) {
               console.log('pass message', message);
-              await axios.get(this.baseUrl + `chat/${this.selectedChat}/message/${message.messageId}/viewed`);
-              this.selectedChatMessages = (await axios.get(this.baseUrl + `chat/${this.selectedChat}/messages`)).data;
+              await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/message/${message.messageId}/viewed`);
+              this.selectedChatMessages = (await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/messages`)).data;
             }
           },
           isMine(message) {
@@ -128,7 +145,7 @@
             return name + ' (' + userId + ')';
           },
           async start() {
-            this.exampleSocket = new WebSocket(this.websocketUrl);
+            this.exampleSocket = new WebSocket(this.getWebsocketUrl());
             function onMessage (e) {
               const message = JSON.parse(e.data);
               if (message.type === 'message') {
@@ -140,7 +157,7 @@
               } else if (message.type === 'countNotViewed') {
                 const data = Array.from(this.chats).map(chat => {
                   if (chat.chatId === message.content.chatId) {
-                    chat.countNotViewed = message.content.countNotViewed;
+                    chat.countNotViewed = Number(message.content.countNotViewed);
                   }
                   return chat;
                 });
@@ -150,33 +167,42 @@
             this.exampleSocket.onmessage = onMessage.bind(this);
 
             axios.defaults.headers.common['x-api-key'] = this.token;
-            this.currentUser = (await axios.get(this.baseUrl + `user/me`)).data;
+            this.currentUser = (await axios.get(this.getBaseUrl() + `user/me`)).data;
             this.currentUserId = this.currentUser.userId;
-            this.chats = (await axios.get(this.baseUrl + `chats`)).data;
+            this.chats = (await axios.get(this.getBaseUrl() + `chats`)).data;
             const subscribe = {action:'subscribe', userId: app.currentUserId};
             this.exampleSocket.send(JSON.stringify(subscribe));
           },
           async showChat(chatId) {
             this.selectedChat = chatId;
-            this.selectedChatInfo = (await axios.get(this.baseUrl + `chat/${chatId}/info`)).data;
-            this.selectedChatUsers = (await axios.get(this.baseUrl + `chat/${chatId}/users`)).data;
+            this.selectedChatInfo = (await axios.get(this.getBaseUrl() + `chat/${chatId}/info`)).data;
+            this.selectedChatUsers = (await axios.get(this.getBaseUrl() + `chat/${chatId}/users`)).data;
             this.selectedChatMessages = null;
-            this.selectedChatMessages = (await axios.get(this.baseUrl + `chat/${chatId}/messages`)).data;
+            this.selectedChatMessages = (await axios.get(this.getBaseUrl() + `chat/${chatId}/messages`)).data;
             setTimeout(()=>{
               this.$refs.scrollArea.setScrollPercentage(100, 2000);
             },500,this);
           },
+          async changeSelectedChatName() {
+            const name = this.selectedChatNewName;
+            const response = await axios.post(this.getBaseUrl() + `chat/${this.selectedChat}/info`, {
+              name,
+            });
+            console.log('response', response);
+            this.selectedChatNewName = null;
+            await this.showChat(this.selectedChat);
+          },
           async addUserToChat(userId) {
-            await axios.get(this.baseUrl + `chat/${this.selectedChat}/user/${this.addUserId}/append`);
+            await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/user/${this.addUserId}/append`);
             this.addUserId = null;
-            this.selectedChatUsers = (await axios.get(this.baseUrl + `chat/${this.selectedChat}/users`)).data;
+            this.selectedChatUsers = (await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/users`)).data;
           },
           async createChat() {
-            const response = await axios.post(this.baseUrl + `chat/new`);
-            this.chats = (await axios.get(this.baseUrl + `chats`)).data;
+            const response = await axios.post(this.getBaseUrl() + `chat/new`);
+            this.chats = (await axios.get(this.getBaseUrl() + `chats`)).data;
           },
           async sendMessage() {
-            const response = await axios.post(this.baseUrl + `chat/${this.selectedChat}/message`, {
+            const response = await axios.post(this.getBaseUrl() + `chat/${this.selectedChat}/message`, {
               type: 'text',
               content: this.message,
             });
@@ -184,26 +210,26 @@
             setTimeout(()=>{
               this.$refs.scrollArea.setScrollPercentage(100,1000);
             },500,this);            
-            // this.selectedChatMessages = (await axios.get(this.baseUrl + `chats/${this.selectedChat}/messages`)).data;
+            // this.selectedChatMessages = (await axios.get(this.getBaseUrl() + `chats/${this.selectedChat}/messages`)).data;
           },
           async deleteUserIdFromChat (userId) {
-            await axios.get(this.baseUrl + `chat/${this.selectedChat}/user/${userId}/delete`);
-            this.selectedChatUsers = (await axios.get(this.baseUrl + `chat/${this.selectedChat}/users`)).data;
+            await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/user/${userId}/delete`);
+            this.selectedChatUsers = (await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/users`)).data;
           },
           async unshiftMessage(chatId, message) {
             this.selectedChatMessages.push(message);
           },
           async getMessageStatus(chatId, messageId) {
-            await axios.get(this.baseUrl + `chat/${chatId}/message/${messageId}/info`);
+            await axios.get(this.getBaseUrl() + `chat/${chatId}/message/${messageId}/info`);
           },
           async setMessageStatusReceived(chatId, messageId) {
-            await axios.get(this.baseUrl + `chat/${chatId}/message/${messageId}/received`);
+            await axios.get(this.getBaseUrl() + `chat/${chatId}/message/${messageId}/received`);
           },
           async setMessageStatusViewed(chatId, messageId) {
-            await axios.get(this.baseUrl + `chat/${chatId}/message/${messageId}/viewed`);
+            await axios.get(this.getBaseUrl() + `chat/${chatId}/message/${messageId}/viewed`);
           },
           async setAllMessagesStatusViewed(chatId) {
-            await axios.get(this.baseUrl + `chat/${chatId}/messages/viewed`);
+            await axios.get(this.getBaseUrl() + `chat/${chatId}/messages/viewed`);
           },
         },
       });
