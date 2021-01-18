@@ -8,7 +8,12 @@
       <div class="row">
         <div class="col-12 col-md-12 q-pa-md">
           domain <input type="text" v-model="domain" placeholder="domain.ru:3030">
-          secure? <input type="checkbox" v-model="secure">
+          secure? <input type="checkbox" v-model="secure"><br/>
+          phone <input type="text" v-model="phone">
+          <button @click="getCode()">get code</button><br/>
+          code <input type="text" v-model="code">
+          <button @click="auth()">auth</button><br/>
+          
           token <input type="text" v-model="token">
           <button @click="start()">Connect</button>
         </div>
@@ -109,6 +114,8 @@
       var app = new Vue({
         el: '#app',
         data: {
+          phone: null,
+          code: null,
           newUserName: null,
           newUserAvatarUrl: null,
           domain: 'localhost:3010',
@@ -127,7 +134,13 @@
           exampleSocket: null,
         },
         methods: {
-          
+          async getCode () {
+            await axios.get(this.getBaseUrl() + `auth/${this.phone}/code`);
+          },
+          async auth () {
+            const res = (await axios.get(this.getBaseUrl() + `auth/${this.phone}/code/${this.code}`)).data;
+            this.token = res.token;
+          },
           getBaseUrl () {
             const s = this.secure ? 's' : '';
             return `http${s}://${this.domain}/v1/`;
