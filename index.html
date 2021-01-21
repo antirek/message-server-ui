@@ -41,9 +41,11 @@
             <q-list bordered separator v-for="(chat,index) in chats" v-if="chats" :key="index">
               <q-item clickable>
                 <q-item-section @click="showChat(chat.chatId)">
-                  <q-item-label>{{ chat.chatId }}
-                    <q-badge v-if="chat.countNotViewed !== 0" outline color="primary" />{{chat.countNotViewed}}</q-badge>
-                  </q-item-label>
+                  <q-item-label>{{ chat.name }}</q-item-label>
+                  <q-item-label caption>{{ chat.chatId }}</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-badge v-if="chat.countNotViewed !== 0" outline color="primary" />{{chat.countNotViewed}}</q-badge>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -77,7 +79,7 @@
             <div v-if="selectedChatMessages">
               <h6>Messages</h6>              
               <div>
-                <q-scroll-area ref="scrollArea" style="height: 500px; width: 100%;">
+                <q-scroll-area ref="scrollArea" style="height: 300px; width: 100%;">
                   <div v-for="(message,index) in selectedChatMessages" :key="index">
                     <q-chat-message
                       :name="format(message.sender)"
