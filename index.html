@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link href="https://cdn.jsdelivr.net/npm/quasar@1.15.0/dist/quasar.css" rel="stylesheet" type="text/css">    
+    <link href="https://cdn.jsdelivr.net/npm/quasar@1.15.1/dist/quasar.css" rel="stylesheet" type="text/css">    
   </head>
   <body>
     <div id="app">
       <div class="row">
-        <div class="col-12 col-md-12 q-pa-md">
+        <div class="col-12 col-md-6 q-pa-md">
           domain <input type="text" v-model="domain" placeholder="domain.ru:3030">
           secure? <input type="checkbox" v-model="secure"><br/>
           phone <input type="text" v-model="phone">
@@ -17,10 +17,7 @@
           token <input type="text" v-model="token">
           <button @click="start()">Connect</button>
         </div>
-      </div>
-      <div class="row">
-        <div class="col-12 col-md-3 q-pa-md">
-          <!-- menu -->
+        <div class="col-12 col-md-6">
           <div v-if="currentUser">
             <h6>User</h6>
             <q-chip>
@@ -35,83 +32,126 @@
               <button @click="changeUserData()">update</button>
             </div>
           </div>
-          <div v-if="chats">
-            <h3>Chats</h3>
-            <button @click="createChat">add chat</button>
-            <q-list bordered separator v-for="(chat,index) in chats" v-if="chats" :key="index">
-              <q-item clickable>
-                <q-item-section @click="showChat(chat.chatId)">
-                  <q-item-label>{{ chat.name }}</q-item-label>
-                  <q-item-label caption>{{ chat.chatId }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-badge v-if="chat.countNotViewed !== 0" outline color="primary" />{{chat.countNotViewed}}</q-badge>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </div>
-          <div v-if="invites">
-            <h3>Invites</h3>
-            <q-list bordered separator v-for="(invite,index) in invites" v-if="invites" :key="index">
-              <q-item clickable>
-                <q-item-section @click="">
-                  <q-item-label>{{ invite.chatId }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </div>
         </div>
-        <div class="col-12 col-md-9 q-pa-md">
-          <!-- content -->
-          <div v-if="selectedChat">
-            <div class="row">
-              <div class="col-12 col-md-6 q-pa-md">
-                <h6 v-if="selectedChat && selectedChatInfo">Chat {{selectedChat}} {{selectedChatInfo.name}}</h6>
-                <button v-if="selectedChat" @click="setAllMessagesStatusViewed(selectedChat)">mark all viewed</button>
-                <span v-if="selectedChatInfo">{{selectedChatInfo}}</span>
-                <div>
-                  new chat name <input type="text" v-model="selectedChatNewName">
-                  <button @click="changeSelectedChatName()">change</button>
-                </div>
-              </div>
-              <div class="col-12 col-md-6 q-pa-md">
-                <h6 v-if="selectedChatUsers">Users</h6>
-                <input type="text" v-model="invitePhone"><button @click="inviteToChatByPhone()">Invite</button>
-                <div>
-                  <ul v-for="(user,index) in selectedChatUsers" :key="index">
-                    <li>{{user.userId}}
-                      <button @click="deleteUserIdFromChat(user.userId)">del</button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-            <div v-if="selectedChatMessages">
-              <h6>Messages</h6>              
-              <div>
-                <q-scroll-area ref="scrollArea" style="height: 300px; width: 100%;">
-                  <div v-for="(message,index) in selectedChatMessages" :key="index">
-                    <q-chat-message
-                      :name="format(message.sender)"
-                      :avatar="message.sender.avatarUrl"
-                      :stamp="message.date"
-                      :sent="isMine(message)"
-                      v-observe-visibility="async function (isVisible, entry) { visibilityChanged(isVisible, entry, message); }"
-                    >
-                      {{ message.content }}
-                    <br/>
-                      {{ message.viewed }}
-                    <br>
-                    <button v-if="!isMine(message)" @click="setMessageStatusReceived(message.chatId,message.messageId)">mark received</button>
-                    <button v-if="!isMine(message)" @click="setMessageStatusViewed(message.chatId,message.messageId)">mark viewed</button>
-                    <button @click="getMessageStatus(message.chatId,message.messageId)">info</button>
-                    </q-chat-message>
-                  </div>
-                </q-scroll-area>
-                send message <input type="text" v-model="message" style="width:70%" @changed=""><button @click="sendMessage()">Add</button>
-              </div>              
+      </div>
+      <div class="row">
+        <div class="col-12 col-md-12 q-pa-md">          
+          <div class="q-pa-md">
+            <div class="q-gutter-y-md">
+              <q-card>
+                <q-tabs
+                  v-model="tab"
+                  dense
+                  class="text-grey"
+                  active-color="primary"
+                  indicator-color="primary"
+                  align="justify"
+                  narrow-indicator
+                  @input="log"
+                >
+                  <q-tab name="mails" label="Chats"></q-tab>
+                  <q-tab name="alarms" label="Invites"></q-tab>
+                </q-tabs>
+        
+                <q-separator></q-separator>
+        
+                <q-tab-panels v-model="tab" animated>
+                  <q-tab-panel name="mails">
+                    <div class="row">
+                      <div class="col-12 col-md-3 q-pa-md">          
+              
+                        <div v-if="chats">
+                          <h3>Chats</h3>
+                          <button @click="createChat">add chat</button>
+                          <q-list bordered separator v-for="(chat,index) in chats" v-if="chats" :key="index">
+                            <q-item clickable>
+                              <q-item-section @click="showChat(chat.chatId)">
+                                <q-item-label>{{ chat.name }}</q-item-label>
+                                <q-item-label caption>{{ chat.chatId }}</q-item-label>
+                              </q-item-section>
+                              <q-item-section side>
+                                <q-badge v-if="chat.countNotViewed !== 0" outline color="primary" />{{chat.countNotViewed}}</q-badge>
+                              </q-item-section>
+                            </q-item>
+                          </q-list>
+                        </div>
+                      
+                      </div>
+                      <div class="col-12 col-md-9 q-pa-md">          
+
+                        <div v-if="selectedChat">
+                          <div class="row">
+                            <div class="col-12 col-md-6 q-pa-md">
+                              <h6 v-if="selectedChat && selectedChatInfo">Chat {{selectedChat}} {{selectedChatInfo.name}}</h6>
+                              <button v-if="selectedChat" @click="setAllMessagesStatusViewed(selectedChat)">mark all viewed</button>
+                              <span v-if="selectedChatInfo">{{selectedChatInfo}}</span>
+                              <div>
+                                new chat name <input type="text" v-model="selectedChatNewName">
+                                <button @click="changeSelectedChatName()">change</button>
+                              </div>
+                            </div>
+                            <div class="col-12 col-md-6 q-pa-md">
+                              <h6 v-if="selectedChatUsers">Users</h6>
+                              <input type="text" v-model="invitePhone"><button @click="inviteToChatByPhone()">Invite</button>
+                              <div>
+                                <ul v-for="(user,index) in selectedChatUsers" :key="index">
+                                  <li>{{user.userId}}
+                                    <button @click="deleteUserIdFromChat(user.userId)">del</button>
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                          <div v-if="selectedChatMessages">
+                            <h6>Messages</h6>              
+                            <div>
+                              <q-scroll-area ref="scrollArea" style="height: 300px; width: 100%;">
+                                <div v-for="(message,index) in selectedChatMessages" :key="index">
+                                  <q-chat-message
+                                    :name="format(message.sender)"
+                                    :avatar="message.sender.avatarUrl"
+                                    :stamp="message.date"
+                                    :sent="isMine(message)"
+                                    v-observe-visibility="async function (isVisible, entry) { visibilityChanged(isVisible, entry, message); }"
+                                  >
+                                    {{ message.content }}
+                                  <br/>
+                                    {{ message.viewed }}
+                                  <br>
+                                  <button v-if="!isMine(message)" @click="setMessageStatusReceived(message.chatId,message.messageId)">mark received</button>
+                                  <button v-if="!isMine(message)" @click="setMessageStatusViewed(message.chatId,message.messageId)">mark viewed</button>
+                                  <button @click="getMessageStatus(message.chatId,message.messageId)">info</button>
+                                  </q-chat-message>
+                                </div>
+                              </q-scroll-area>
+                              send message <input type="text" v-model="message" style="width:70%" @changed=""><button @click="sendMessage()">Add</button>
+                            </div>              
+                          </div>
+                        </div>
+                      </div>
+                      
+                    </div>
+                  </q-tab-panel>
+        
+                  <q-tab-panel name="alarms">
+                    <div v-if="invites">
+                      <h3>Invites</h3>
+                      <q-list bordered separator v-for="(invite,index) in invites" v-if="invites" :key="index">
+                        <q-item clickable>
+                          <q-item-section @click="">
+                            <q-item-label>{{ invite.chatId }}</q-item-label>
+                          </q-item-section>
+                        </q-item>
+                      </q-list>
+                    </div>
+                  </q-tab-panel>
+        
+                </q-tab-panels>
+              </q-card>
             </div>
           </div>
+          
+
         </div>
       </div>
     </div>
@@ -125,28 +165,34 @@
     <script>
       var app = new Vue({
         el: '#app',
-        data: {
-          phone: null,
-          code: null,
-          newUserName: null,
-          newUserAvatarUrl: null,
-          domain: 'localhost:3010',
-          secure: false,
-          token: '894c6dd3-6ad3-423a-8bc5-39d159e6b050',
-          currentUserId: null,
-          currentUser: null,
-          chats: null,
-          invitePhone: null,
-          selectedChatMessages: null,
-          selectedChat: null,
-          selectedChatInfo: null,
-          selectedChatNewName: null,
-          selectedChatUsers: null,
-          message: null,
-          exampleSocket: null,
-          invites: null,
+        data: function () { 
+          return {
+            phone: null,
+            code: null,
+            newUserName: null,
+            newUserAvatarUrl: null,
+            domain: 'localhost:3010',
+            secure: false,
+            token: '894c6dd3-6ad3-423a-8bc5-39d159e6b050',
+            currentUserId: null,
+            currentUser: null,
+            chats: null,
+            invitePhone: null,
+            selectedChatMessages: null,
+            selectedChat: null,
+            selectedChatInfo: null,
+            selectedChatNewName: null,
+            selectedChatUsers: null,
+            message: null,
+            exampleSocket: null,
+            invites: null,
+            tab: 'mails',
+          }
         },
         methods: {
+          log: function (e) {
+            console.log(e);
+          },
           async getCode () {
             await axios.get(this.getBaseUrl() + `auth/${this.phone}/code`);
           },
