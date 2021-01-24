@@ -27,7 +27,7 @@
               <q-avatar>
                 <img :src="currentUser.avatarUrl" />
               </q-avatar>
-              {{currentUser.name}}
+              {{currentUser.name}} ({{currentUser.phone}})
             </q-chip>
             <div>
               name <input type="text" v-model="newUserName"><br/>
@@ -50,6 +50,16 @@
               </q-item>
             </q-list>
           </div>
+          <div v-if="invites">
+            <h3>Invites</h3>
+            <q-list bordered separator v-for="(invite,index) in invites" v-if="invites" :key="index">
+              <q-item clickable>
+                <q-item-section @click="">
+                  <q-item-label>{{ invite.chatId }}</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </div>
         </div>
         <div class="col-12 col-md-9 q-pa-md">
           <!-- content -->
@@ -66,7 +76,7 @@
               </div>
               <div class="col-12 col-md-6 q-pa-md">
                 <h6 v-if="selectedChatUsers">Users</h6>
-                <input type="text" v-model="addUserId"><button @click="addUserToChat()">Add</button>
+                <input type="text" v-model="invitePhone"><button @click="inviteToChatByPhone()">Invite</button>
                 <div>
                   <ul v-for="(user,index) in selectedChatUsers" :key="index">
                     <li>{{user.userId}}
@@ -122,11 +132,11 @@
           newUserAvatarUrl: null,
           domain: 'localhost:3010',
           secure: false,
-          token: 'f7277849-b26b-4c38-a05a-8a60dc0b14e2',
+          token: '894c6dd3-6ad3-423a-8bc5-39d159e6b050',
           currentUserId: null,
           currentUser: null,
           chats: null,
-          addUserId: null,
+          invitePhone: null,
           selectedChatMessages: null,
           selectedChat: null,
           selectedChatInfo: null,
@@ -134,6 +144,7 @@
           selectedChatUsers: null,
           message: null,
           exampleSocket: null,
+          invites: null,
         },
         methods: {
           async getCode () {
@@ -193,6 +204,7 @@
             this.currentUser = (await axios.get(this.getBaseUrl() + `user/me`)).data;
             this.currentUserId = this.currentUser.userId;
             this.chats = (await axios.get(this.getBaseUrl() + `chats`)).data;
+            this.invites = (await axios.get(this.getBaseUrl() + `invites`)).data;
             const subscribe = {action:'subscribe', userId: app.currentUserId};
             this.exampleSocket.send(JSON.stringify(subscribe));
           },
@@ -231,6 +243,11 @@
             await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/user/${this.addUserId}/append`);
             this.addUserId = null;
             this.selectedChatUsers = (await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/users`)).data;
+          },
+          async inviteToChatByPhone(phone) {
+            await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/user/${this.invitePhone}/invite`);
+            this.invitePhone = null;
+            this.invites = (await axios.get(this.getBaseUrl() + `invites`)).data;
           },
           async createChat() {
             const response = await axios.post(this.getBaseUrl() + `chat/new`);
