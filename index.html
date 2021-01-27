@@ -61,7 +61,7 @@
               
                         <div v-if="chats">
                           <h3>Chats</h3>
-                          <button @click="createChat">add chat</button>
+                          <input type="text" v-model="newChatName"><button @click="createChat">add chat</button>
                           <q-list bordered separator v-for="(chat,index) in chats" v-if="chats" :key="index">
                             <q-item clickable>
                               <q-item-section @click="showChat(chat.chatId)">
@@ -91,7 +91,7 @@
                             </div>
                             <div class="col-12 col-md-6 q-pa-md">
                               <h6 v-if="selectedChatUsers">Users</h6>
-                              <input type="text" v-model="invitePhone"><button @click="inviteToChatByPhone()">Invite</button>
+                              <input type="text" v-model="invitePhone" placeholder="phone, like 79000000000"><button @click="inviteToChatByPhone()">Invite</button>
                               <div>
                                 <ul v-for="(user,index) in selectedChatUsers" :key="index">
                                   <li>{{user.userId}}
@@ -174,6 +174,7 @@
             code: null,
             newUserName: null,
             newUserAvatarUrl: null,
+            newChatName: null,
             domain: 'localhost:3010',
             secure: false,
             token: '894c6dd3-6ad3-423a-8bc5-39d159e6b050',
@@ -307,8 +308,10 @@
             this.invites = (await axios.get(this.getBaseUrl() + `invites`)).data;
           },
           async createChat() {
-            const response = await axios.post(this.getBaseUrl() + `chat/new`);
+            const name = this.newChatName;
+            const response = await axios.post(this.getBaseUrl() + `chat/new`, {name});
             this.chats = (await axios.get(this.getBaseUrl() + `chats`)).data;
+            this.newChatName = null;
           },
           async sendMessage() {
             const response = await axios.post(this.getBaseUrl() + `chat/${this.selectedChat}/message`, {
