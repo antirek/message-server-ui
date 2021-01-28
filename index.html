@@ -94,7 +94,7 @@
                               <input type="text" v-model="invitePhone" placeholder="phone, like 79000000000"><button @click="inviteToChatByPhone()">Invite</button>
                               <div>
                                 <ul v-for="(user,index) in selectedChatUsers" :key="index">
-                                  <li>{{user.userId}}
+                                  <li>{{ user.name }} {{ user.userId }} 
                                     <button @click="deleteUserIdFromChat(user.userId)">del</button>
                                   </li>
                                 </ul>
@@ -177,7 +177,7 @@
             newChatName: null,
             domain: 'localhost:3010',
             secure: false,
-            token: '894c6dd3-6ad3-423a-8bc5-39d159e6b050',
+            token: '_LYa0K5bV4Yph1USizOAL',
             currentUserId: null,
             currentUser: null,
             chats: null,
