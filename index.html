@@ -90,14 +90,28 @@
                               </div>
                             </div>
                             <div class="col-12 col-md-6 q-pa-md">
-                              <h6 v-if="selectedChatUsers">Users</h6>
-                              <input type="text" v-model="invitePhone" placeholder="phone, like 79000000000"><button @click="inviteToChatByPhone()">Invite</button>
                               <div>
-                                <ul v-for="(user,index) in selectedChatUsers" :key="index">
-                                  <li>{{ user.name }} {{ user.userId }} 
-                                    <button @click="deleteUserIdFromChat(user.userId)">del</button>
-                                  </li>
-                                </ul>
+                                <h6 v-if="selectedChatUsers">Users</h6>
+                                <input type="text" v-model="invitePhone" placeholder="phone, like 79000000000">
+                                <button @click="inviteToChatByPhone()">Invite</button>
+                                <div>
+                                  <ul v-for="(user,index) in selectedChatUsers" :key="index">
+                                    <li>{{ user.name }} {{ user.userId }} 
+                                      <button @click="deleteUserIdFromChat(user.userId)">del</button>
+                                    </li>
+                                  </ul>
+                                </div>
+                              </div>
+                              <div>
+                                <h6 v-if="selectedChatUsers">Invites</h6>
+                                <button @click="loadInvites()">load</button>
+                                <div>
+                                  <ul v-for="(invite,index) in selectedChatInvites" :key="index">
+                                    <li>{{ invite.userId }}
+                                      <button @click="rejectInvite(invite)">reject</button>
+                                    </li>
+                                  </ul>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -191,11 +205,15 @@
             exampleSocket: null,
             invites: null,
             tab: 'chats',
+            selectedChatInvites: null,
           }
         },
         methods: {
           log: function (e) {
             console.log(e);
+          },
+          async loadInvites () {
+            this.selectedChatInvites = (await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/invites`)).data;
           },
           async getCode () {
             await axios.get(this.getBaseUrl() + `auth/${this.phone}/code`);
@@ -211,6 +229,10 @@
           async declineInvite (invite) {
             await axios.get(this.getBaseUrl() + `invite/${invite.inviteId}/decline`);
             this.invites = (await axios.get(this.getBaseUrl() + `invites`)).data;
+          },
+          async rejectInvite (invite) {
+            await axios.get(this.getBaseUrl() + `invite/${invite.inviteId}/reject`);
+            this.selectedChatInvites = (await axios.get(this.getBaseUrl() + `chat/${this.selectedChat}/invites`)).data;
           },
           getBaseUrl () {
             const s = this.secure ? 's' : '';
