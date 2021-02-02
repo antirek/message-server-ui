@@ -28,7 +28,6 @@
             </q-chip>
             <div>
               name <input type="text" v-model="newUserName"><br/>
-              avatarUrl <input type="text" v-model="newUserAvatarUrl"><br/>
               <button @click="changeUserData()">update</button>
               <hr>
               <q-file
@@ -198,7 +197,6 @@
             phone: null,
             code: null,
             newUserName: null,
-            newUserAvatarUrl: null,
             newChatName: null,
             domain: 'localhost:3010',
             secure: false,
@@ -230,6 +228,7 @@
                   'Content-Type': 'multipart/form-data',
                 },
               });
+            await this.updateProfile();
           },
           log: function (e) {
             console.log(e);
@@ -303,23 +302,23 @@
             this.exampleSocket.onmessage = onMessage.bind(this);
 
             axios.defaults.headers.common['x-api-key'] = this.token;
-            this.currentUser = (await axios.get(this.getBaseUrl() + `user/me`)).data;
-            this.currentUserId = this.currentUser.userId;
+            await this.updateProfile();
             this.chats = (await axios.get(this.getBaseUrl() + `chats`)).data;
             this.invites = (await axios.get(this.getBaseUrl() + `invites`)).data;
             const subscribe = {action:'subscribe', userId: app.currentUserId};
             this.exampleSocket.send(JSON.stringify(subscribe));
           },
+          async updateProfile () {
+            this.currentUser = (await axios.get(this.getBaseUrl() + `user/me`)).data;
+            this.currentUserId = this.currentUser.userId;
+          },
           async changeUserData () {
             const name = this.newUserName;
-            const avatarUrl = this.newUserAvatarUrl;
             const response = await axios.post(this.getBaseUrl() + `user/me`, {
               name,
-              avatarUrl,
             });
-            console.log('resp', response);
+            // console.log('resp', response);
             this.newUserName = null;
-            this.newUserAvatarUrl = null;
             this.start();
           },
           async showChat(chatId) {
