@@ -22,7 +22,7 @@
             <h6>User</h6>
             <q-chip>
               <q-avatar>
-                <img :src="currentUser.avatarUrl" />
+                <img :src="currentUserAvatarUrl" />
               </q-avatar>
               {{currentUser.name}} ({{currentUser.phone}})
             </q-chip>
@@ -215,7 +215,14 @@
             invites: null,
             tab: 'chats',
             selectedChatInvites: null,
+            rnd: null,
           }
+        },
+        computed: {
+          currentUserAvatarUrl () {
+            this.rnd = Math.random();
+            return `${this.getBaseUrl()}user/${this.currentUserId}/avatar?${this.rnd}`;
+          } 
         },
         methods: {
           async uploadAvatarFile () {
@@ -228,6 +235,7 @@
                   'Content-Type': 'multipart/form-data',
                 },
               });
+            this.rnd = Math.random();
             await this.updateProfile();
           },
           log: function (e) {
